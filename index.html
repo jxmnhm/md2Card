@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>极简·文读 v11.0 | 黄金典藏版</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+        /* --- 全局设定 --- */
+        body {
+            font-family: 'Noto Serif SC', serif;
+            background-color: #eef2f5;
+            color: #333;
+            overflow: hidden;
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+
+        /* --- 卡片物理容器 --- */
+        .card-canvas {
+            width: 600px;
+            height: 800px;
+            background-color: #fff;
+            position: relative;
+            flex-shrink: 0;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        /* 主题样式 */
+        .texture-paper {
+            background-color: #fdfbf7;
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23d1d1d1' fill-opacity='0.1'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z'/%3E%3C/g%3E%3C/svg%3E");
+        }
+        .theme-dark { background-color: #18181b; color: #a1a1aa; }
+        .theme-dark .text-main { color: #e4e4e7; }
+        .theme-dark .text-sub { color: #52525b; }
+        .theme-dark .card-footer { border-top: 1px solid rgba(255,255,255,0.1); }
+
+        /* 预览容器 */
+        .preview-wrapper {
+            width: 600px;
+            height: 800px;
+            transform: scale(0.6);
+            transform-origin: top left;
+            margin-bottom: -320px;
+            margin-right: -240px;
+            display: inline-block;
+        }
+
+        /* --- 内部布局 --- */
+        .card-layout {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 50px 50px 0 50px;
+        }
+
+        .card-header {
+            flex-shrink: 0;
+            margin-bottom: 25px;
+        }
+
+        /* 修复：找回丢失的标题样式 */
+        .card-title {
+            font-size: 2.4rem;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 0;
+        }
+        /* 如果标题用了Markdown，去掉生成的P标签边距 */
+        .card-title p { margin: 0; }
+
+        .card-content-box {
+            width: 100%;
+            font-size: 1.3rem;
+            line-height: 1.8;
+            text-align: justify;
+            font-weight: 300;
+        }
+
+        /* Footer 绝对定位 */
+        .card-footer {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 80px; padding: 0 50px;
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.85rem; opacity: 0.6; z-index: 50; background-color: inherit;
+        }
+        .footer-line {
+            position: absolute; top: 10px; left: 50px; right: 50px;
+            border-top: 1px solid rgba(0,0,0,0.08);
+        }
+        .theme-dark .footer-line { border-top: 1px solid rgba(255,255,255,0.1); }
+
+        /* Markdown Elements */
+        .card-content-box p { margin-bottom: 1em; }
+        .card-content-box h1 { font-size: 1.5em; font-weight: 700; margin: 0.8em 0 0.6em 0; line-height: 1.3; }
+        .card-content-box h2 { font-size: 1.3em; font-weight: 700; margin: 0.8em 0 0.5em 0; }
+        .card-content-box ul, .card-content-box ol { padding-left: 1.4em; margin-bottom: 1em; }
+        .card-content-box li { margin-bottom: 0.4em; }
+        .card-content-box ul { list-style-type: disc; }
+        .card-content-box ol { list-style-type: decimal; }
+        .card-content-box blockquote { border-left: 3px solid #ccc; padding-left: 1em; margin: 0 0 1em 0; color: #888; }
+        
+        /* 完美序列：隐藏跨页后的列表头 */
+        .card-content-box li.continuation-item { list-style-type: none !important; }
+
+        #offscreen-workspace { position: absolute; top: 0; left: 0; visibility: hidden; pointer-events: none; }
+    </style>
+</head>
+<body class="h-screen flex">
+
+    <div class="w-[400px] bg-white border-r border-gray-200 flex flex-col z-20 shadow-xl flex-shrink-0">
+        <div class="p-6 border-b bg-gray-50">
+            <h1 class="text-2xl font-bold tracking-wider text-gray-800">极简·文读 <span class="text-xs bg-amber-500 text-white px-1 rounded">v11.0</span></h1>
+            <p class="text-xs text-gray-400 mt-1">黄金典藏 | 完美排版</p>
+        </div>
+        <div class="flex-1 overflow-y-auto p-6 space-y-5">
+            <div>
+                <label class="text-xs font-bold text-gray-400 uppercase">Title</label>
+                <input type="text" id="inputTitle" class="w-full p-3 bg-gray-50 border rounded mt-2 outline-none font-bold" placeholder="标题 (支持 Markdown)">
+            </div>
+            <div>
+                <label class="text-xs font-bold text-gray-400 uppercase">Content</label>
+                <textarea id="inputText" class="w-full h-96 p-3 bg-gray-50 border rounded mt-2 outline-none font-mono text-sm resize-none" placeholder="Markdown..."></textarea>
+            </div>
+            <div>
+                <label class="text-xs font-bold text-gray-400 uppercase">Footer</label>
+                <input type="text" id="inputAuthor" class="w-full p-3 bg-gray-50 border rounded mt-2 outline-none" value="@Gemini Reader">
+            </div>
+            <div>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="setTheme('paper')" class="py-2 border rounded bg-[#fdfbf7] text-xs">米白</button>
+                    <button onclick="setTheme('white')" class="py-2 border rounded bg-white text-xs">纯白</button>
+                    <button onclick="setTheme('dark')" class="py-2 border rounded bg-[#18181b] text-white text-xs">暗黑</button>
+                </div>
+            </div>
+        </div>
+        <div class="p-6 border-t bg-gray-50">
+            <button onclick="runEngine()" id="runBtn" class="w-full bg-gray-900 text-white py-3 rounded shadow hover:bg-black transition mb-3">立即生成</button>
+            <button onclick="downloadAll()" class="w-full bg-white border text-gray-700 py-3 rounded hover:bg-gray-100 transition">批量下载</button>
+        </div>
+    </div>
+
+    <div class="flex-1 bg-gray-200/90 relative flex flex-col">
+        <div class="flex-1 overflow-y-auto p-12 flex flex-wrap gap-8 justify-center content-start no-scrollbar" id="previewArea"></div>
+    </div>
+
+    <div id="offscreen-workspace"></div>
+
+    <script>
+        let currentTheme = 'paper';
+        const SAFE_BOTTOM_MARGIN = 100;
+
+        window.onload = () => {
+            document.getElementById('inputTitle').value = "完美序列测试";
+            document.getElementById('inputText').value = `这是 v11.0 版本，修复了标题渲染问题，并完美保持了列表的连续性。
+
+# 有序列表连续性
+1. **第一项**：这是开始。
+2. **第二项**：这是一个非常长的列表项。当它跨页时，下一页的开头**不应该**出现新的序号（比如 1. 或 3.），而是应该无痕续接上一页的内容。
+3. **第三项**：这一项应该紧接着上一页，序号显示为 "3"，而不是重置为 "1"。请仔细检查这一点。
+4. **第四项**：继续测试序号的连续性。
+
+# 无序列表测试
+* 项目 A：普通项目。
+* 项目 B：长项目测试。当这个点跨页时，第二页的开头**不应该**出现那个黑色的圆点。
+* 项目 C：测试结束。
+
+> "细节决定成败。"
+
+请输入更多内容进行测试。`;
+            runEngine();
+        };
+
+        function setTheme(t) { currentTheme = t; runEngine(); }
+
+        async function runEngine() {
+            const btn = document.getElementById('runBtn');
+            btn.innerText = "排版中...";
+            btn.disabled = true;
+            await new Promise(r => setTimeout(r, 50));
+            try { generateCards(); } catch (e) { console.error(e); alert(e.message); }
+            btn.innerText = "立即生成";
+            btn.disabled = false;
+        }
+
+        function getNodeBottom(node) {
+            if (node.nodeType === Node.ELEMENT_NODE) return node.getBoundingClientRect().bottom;
+            if (node.nodeType === Node.TEXT_NODE) {
+                const range = document.createRange();
+                range.selectNode(node);
+                return range.getBoundingClientRect().bottom;
+            }
+            return 0;
+        }
+
+        function generateCards() {
+            const titleInput = document.getElementById('inputTitle').value;
+            const mdText = document.getElementById('inputText').value;
+            const author = document.getElementById('inputAuthor').value;
+            const preview = document.getElementById('previewArea');
+            const workspace = document.getElementById('offscreen-workspace');
+            
+            preview.innerHTML = '';
+            workspace.innerHTML = '';
+
+            const sourceBox = document.createElement('div');
+            sourceBox.innerHTML = marked.parse(mdText);
+            cleanNodesRecursively(sourceBox);
+
+            let pageIndex = 1;
+            let safety = 0;
+
+            while (sourceBox.childNodes.length > 0) {
+                if (++safety > 300) break;
+
+                const card = createCard(pageIndex, titleInput, author);
+                workspace.appendChild(card); 
+                const contentBox = card.querySelector('.card-content-box');
+                const cardRect = card.getBoundingClientRect();
+                const limitAbsoluteY = cardRect.top + 800 - SAFE_BOTTOM_MARGIN;
+
+                fillContent(sourceBox, contentBox, limitAbsoluteY);
+
+                const finalCard = card.cloneNode(true);
+                workspace.removeChild(card);
+                const wrapper = document.createElement('div');
+                wrapper.className = 'preview-wrapper';
+                wrapper.appendChild(finalCard);
+                preview.appendChild(wrapper);
+                finalCard.dataset.page = pageIndex;
+                pageIndex++;
+            }
+
+            const allCards = document.querySelectorAll('#previewArea .card-canvas');
+            allCards.forEach(c => {
+                c.querySelector('.page-num').innerText = `${c.dataset.page} / ${allCards.length}`;
+            });
+        }
+
+        function cleanNodesRecursively(node) {
+            const children = Array.from(node.childNodes);
+            children.forEach(child => {
+                if (child.nodeType === Node.TEXT_NODE) {
+                    if (!child.textContent.trim()) node.removeChild(child);
+                } else if (child.nodeType === Node.ELEMENT_NODE) {
+                    cleanNodesRecursively(child);
+                }
+            });
+        }
+
+        function fillContent(source, target, limitY) {
+            let isEmptyPage = true;
+            while (source.childNodes.length > 0) {
+                const child = source.firstChild;
+                target.appendChild(child);
+                const bottom = getNodeBottom(child);
+                
+                if (bottom > limitY) {
+                    target.removeChild(child);
+                    const splitSuccess = trySplit(child, source, target, limitY);
+                    if (!splitSuccess && isEmptyPage) {
+                        target.appendChild(child); return; 
+                    }
+                    return; 
+                }
+                isEmptyPage = false;
+            }
+        }
+
+        function trySplit(node, source, target, limitY) {
+            if (node.nodeType === Node.TEXT_NODE) return splitText(node, source, target, limitY);
+            if (node.nodeType === Node.ELEMENT_NODE) return splitElement(node, source, target, limitY);
+            return false;
+        }
+
+        function splitText(node, source, target, limitY) {
+            const text = node.textContent;
+            let l = 0, r = text.length, best = 0;
+            const span = document.createElement('span');
+            target.appendChild(span);
+
+            while (l <= r) {
+                const mid = Math.floor((l+r)/2);
+                span.textContent = text.substring(0, mid);
+                if (span.getBoundingClientRect().bottom <= limitY) {
+                    best = mid;
+                    l = mid + 1;
+                } else {
+                    r = mid - 1;
+                }
+            }
+            target.removeChild(span);
+
+            if (best === 0) return false;
+            target.appendChild(document.createTextNode(text.substring(0, best)));
+            const rest = text.substring(best);
+            if (rest.length > 0) {
+                node.textContent = rest;
+                source.insertBefore(node, source.firstChild);
+            }
+            return true;
+        }
+
+        function splitElement(node, source, target, limitY) {
+            const clone = node.cloneNode(false);
+            target.appendChild(clone);
+            if (clone.getBoundingClientRect().bottom > limitY) {
+                target.removeChild(clone); return false;
+            }
+
+            let hasMoved = false;
+            let movedChildrenCount = 0;
+            let lastChildSplit = false; 
+
+            while (node.childNodes.length > 0) {
+                const child = node.firstChild;
+                clone.appendChild(child);
+
+                if (getNodeBottom(child) > limitY) {
+                    clone.removeChild(child); 
+                    const subSplit = trySplit(child, node, clone, limitY);
+                    if (subSplit) {
+                        hasMoved = true;
+                        movedChildrenCount++;
+                        lastChildSplit = true;
+                        if (child.nodeName === 'LI' && node.firstChild) {
+                            node.firstChild.classList.add('continuation-item');
+                        }
+                    } else {
+                        node.insertBefore(child, node.firstChild);
+                    }
+                    break; 
+                }
+                hasMoved = true;
+                movedChildrenCount++;
+            }
+
+            if (!hasMoved && !clone.hasChildNodes()) {
+                target.removeChild(clone); return false;
+            }
+
+            // 有序列表序号修正
+            if (node.nodeName === 'OL') {
+                let currentStart = parseInt(node.getAttribute('start')) || 1;
+                let nextStart = currentStart + movedChildrenCount;
+                if (lastChildSplit) nextStart -= 1;
+                node.setAttribute('start', nextStart);
+            }
+
+            if (node.hasChildNodes()) {
+                 cleanNodesRecursively(node);
+                 if (node.hasChildNodes()) source.insertBefore(node, source.firstChild);
+            }
+            return true;
+        }
+
+        function createCard(index, titleRaw, author) {
+            const div = document.createElement('div');
+            const themeClass = currentTheme === 'dark' ? 'theme-dark' : (currentTheme === 'paper' ? 'texture-paper' : '');
+            div.className = `card-canvas ${themeClass}`;
+            
+            // 渲染标题 (支持 Markdown)
+            let headerHtml = '';
+            const titleHtml = marked.parseInline(titleRaw || ""); // 使用 parseInline 避免生成 <p>
+
+            if (index === 1) {
+                headerHtml = `<div class="card-title text-main">${titleHtml}</div>`;
+            } else {
+                headerHtml = `<div style="height: 30px; border-bottom: 1px solid currentColor; opacity:0.3; display:flex; align-items:center;"><span style="font-size:0.8rem">${titleRaw} / 续</span></div>`;
+            }
+
+            div.innerHTML = `
+                <div class="card-layout">
+                    <div class="card-header">${headerHtml}</div>
+                    <div class="card-content-box text-main"></div>
+                </div>
+                <div class="card-footer">
+                    <div class="footer-line"></div>
+                    <span class="text-sub">${author}</span>
+                    <span class="page-num text-sub" style="font-family: sans-serif; letter-spacing: 2px;"></span>
+                </div>
+            `;
+            return div;
+        }
+
+        async function downloadAll() {
+            const wrappers = document.querySelectorAll('.preview-wrapper');
+            for (let i = 0; i < wrappers.length; i++) {
+                const wrapper = wrappers[i];
+                const card = wrapper.querySelector('.card-canvas');
+                wrapper.style.transform = 'scale(1)';
+                try {
+                    const canvas = await html2canvas(card, { scale: 2, useCORS: true, backgroundColor: null });
+                    const link = document.createElement('a');
+                    link.download = `Card_${i+1}.png`;
+                    link.href = canvas.toDataURL();
+                    link.click();
+                } catch (e) { console.error(e); }
+                wrapper.style.transform = 'scale(0.6)';
+            }
+        }
+    </script>
+</body>
+</html>
