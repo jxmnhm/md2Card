@@ -1,5 +1,5 @@
 # Text2Card: 极简·文读 (v11.0) ✍️➡️🖼️
-将长文章秒变小红书卡片 | Markdown to Carousel Generator
+[将长文章秒变小红书卡片 | Markdown to Carousel Generator](https://jxmnhm.github.io/md2Card/)
 
 “写作是线性的，但阅读可以是卡片式的。”
 
@@ -42,8 +42,7 @@ Markdown 原生支持：直接粘贴 Markdown 文本，自动渲染 H1, H2, 引�
 零数据上传：你的文章内容、生成的图片完全在本地浏览器处理，不经过任何服务器。
 
 ## 🚀 快速开始 (Quick Start)
-下载本项目中的 .html 文件到本地。
-
+### 下载本项目中的 .html 文件到本地。或者直接点击“[这里](https://jxmnhm.github.io/md2Card/)”。
 双击打开（建议使用 Chrome 或 Edge 浏览器）。
 
 左侧栏设置：
